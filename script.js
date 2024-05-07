@@ -55,51 +55,110 @@ function clear() {
 }
 
 function operate(str) {
-    if (!is_well_formed(str)){
+    if (!is_well_formed(str)) {
         alert("Your expression is not well formed! Please check it carefully.");
     } else {
         let ar = str.split(" ");
-        let ans = parseInt(ar[0]);
+        let numStack = [];
+        let opStack = [];
 
-        for(let i = 1; i < ar.length; i += 2) {
-            let op = ar[i];
-            let num = parseInt(ar[i+1]);
+        for (let i = 0; i < ar.length; i++) {
+            let token = ar[i];
 
-            if (op === "+") {
-                ans += num;
-            } else if (op === "-"){
-                ans -= num;
-            } else if (op === "*"){
-                ans *= num;
-            } else if (op === "/") {
-                if (num == 0) {
-                    alert("Attempt to divide by zero...");
-                    display.value = "0";
-                    return;
-                } else {
-                    ans /= num;
+            if (is_number(token)) {
+                numStack.push(parseInt(token));
+            } else if (token === "(") {
+                opStack.push(token);
+            } else if (token === ")") {
+                while (opStack[opStack.length - 1] !== "(") {
+                    applyOperator(numStack, opStack);
                 }
+                opStack.pop();
             } else {
-                alert("Your expression is not well formed! Please check it carefully.");
+                while (opStack.length > 0 && opStack[opStack.length - 1] !== "(" && precedence(opStack[opStack.length - 1]) >= precedence(token)) {
+                    applyOperator(numStack, opStack);
+                }
+                opStack.push(token);
             }
         }
-        display.value = ans;
+
+        while (opStack.length > 0) {
+            applyOperator(numStack, opStack);
+  }
+
+        display.value = numStack[0];
     }
 }
+
+function applyOperator(numStack, opStack) {
+    let op = opStack.pop();
+    let b = numStack.pop();
+    let a = numStack.pop();
+
+    let ans;
+
+    if (op === "+") {
+        ans = a + b;
+    } else if (op === "-") {
+        ans = a - b;
+    } else if (op === "*") {
+        ans = a * b;
+    } else if (op === "/") {
+        if (b == 0) {
+            alert("Attempt to divide by zero...");
+            display.value = "0";
+            return;
+        } else {
+            ans = a / b;
+        }
+    }
+
+    numStack.push(ans);
+}
+
+
+function precedence(op) {
+    if (op === "+" || op === "-") return 1;
+    if (op === "*" || op === "/") return 2;
+    if (op === "(") return 0; // Give parenthesis the lowest precedence
+}
+
 
 function is_well_formed(str) {
     let ar = str.split(" ");
-    if (ar.length % 2 === 0) return false;
+    let parenthesisCount = 0;
 
-    for(let i = 0; i < ar.length; i++) {
-        if (i % 2 == 0) {
-            if(!is_number(ar[i])) return false;
-        } else {
-            if(!is_op(ar[i])) return false;
+    for (let i = 0; i < ar.length; i++) {
+        let token = ar[i];
+
+        if (token === "(") {
+            parenthesisCount++;
+        } else if (token === ")") {
+            parenthesisCount--;
+            if (parenthesisCount < 0) return false;
+        } else if (is_op(token)) {
+            if (i === 0 || is_op(ar[i - 1])) return false;
+        } else if (is_number(token)) {
+            if (i > 0 && is_number(ar[i - 1])) return false;
         }
     }
-    return true;
+
+    return parenthesisCount === 0;
 }
+
+// function is_well_formed(str) {
+//     let ar = str.split(" ");
+//     if (ar.length % 2 === 0) return false;
+
+//     for(let i = 0; i < ar.length; i++) {
+//         if (i % 2 == 0) {
+//             if(!is_number(ar[i])) return false;
+//         } else {
+//             if(!is_op(ar[i])) return false;
+//         }
+//     }
+//     return true;
+// }
 
 function is_number(n) {
     if (isNaN(parseInt(n))) return false;
